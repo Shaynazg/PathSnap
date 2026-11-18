@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PathSnap — ML & HMM Route Reconstruction</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>PathSnap</h1>
+          <span class="badge">ML + HMM / Viterbi</span>
+        </div>
+      </div>
+
+      <!-- Backend Connection Status / Config -->
+      <div class="backend-connection">
+        <div class="status-indicator" id="backendStatus">
+          <span class="dot"></span>
+          <span class="status-text">Checking API...</span>
+        </div>
+        <div class="url-input-wrapper">
+          <input type="text" id="apiUrlInput" placeholder="http://192.168.x.x:8000" title="Backend URL for Laptop 1" />
+          <button id="saveUrlBtn" class="btn btn-sm">Set URL</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-layout">
+      <!-- Left Sidebar: Controls & Results -->
+      <aside class="sidebar">
+        <!-- Trip Selector Card -->
+        <section class="card trip-card">
+          <div class="card-header">
+            <h2>Select Evaluator Trip</h2>
+            <span class="subtitle">Evaluator Test Suite (10 Trips)</span>
+          </div>
+          <div class="form-group">
+            <select id="tripSelect" class="select-trip">
+              <option value="" disabled selected>Loading evaluator trips...</option>
+            </select>
+          </div>
+          <button id="reconstructBtn" class="btn btn-primary btn-block" disabled>
+            <span class="btn-text">Reconstruct Route</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </section>
+
+        <!-- Status / Progress Banner -->
+        <div id="progressAlert" class="alert info" style="display: none;">
+          <div class="alert-spinner"></div>
+          <div class="alert-content">
+            <strong id="progressTitle">Processing...</strong>
+            <p id="progressDesc">Candidate extraction & ML scoring</p>
+          </div>
+        </div>
+
+        <div id="errorAlert" class="alert error" style="display: none;">
+          <div class="alert-content">
+            <strong id="errorTitle">Reconstruction Error</strong>
+            <p id="errorDesc"></p>
+          </div>
+        </div>
+
+        <!-- Reconstruction Results Card -->
+        <section id="resultsSection" class="card results-card" style="display: none;">
+          <div class="card-header">
+            <h2>Reconstruction Metrics</h2>
+            <span id="tripBadge" class="badge badge-success">Trip 00000000</span>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-label">GPS Observations</span>
+              <span id="metricGpsObs" class="metric-value">—</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Road Candidates</span>
+              <span id="metricCandidates" class="metric-value">—</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Decoded Arcs</span>
+              <span id="metricDecodedArcs" class="metric-value highlight">—</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Disconnections</span>
+              <span id="metricNoPath" class="metric-value">—</span>
+            </div>
+          </div>
+
+          <!-- Evaluation Comparison (Ground Truth vs Top1 vs Viterbi) -->
+          <div id="evalComparisonCard" class="eval-card" style="display: none;">
+            <h3>Evaluation Benchmark (vs Ground Truth)</h3>
+            <div class="eval-table">
+              <div class="eval-row header">
+                <span>Method</span>
+                <span>Precision</span>
+                <span>Recall</span>
+                <span>F1-Score</span>
+              </div>
+              <div class="eval-row viterbi-row">
+                <strong>ML + HMM Viterbi</strong>
+                <span id="evalVitPrec">—</span>
+                <span id="evalVitRec">—</span>
+                <span id="evalVitF1" class="highlight-score">—</span>
+              </div>
+              <div class="eval-row top1-row">
+                <span>ML Classifier (Top-1)</span>
+                <span id="evalTop1Prec">—</span>
+                <span id="evalTop1Rec">—</span>
+                <span id="evalTop1F1">—</span>
+              </div>
+            </div>
+            <div class="f1-improvement">
+              <span>HMM Improvement:</span>
+              <strong id="evalF1Gain" class="positive-gain">+0.00%</strong>
+            </div>
+          </div>
+
+          <!-- Performance Timing -->
+          <div class="timing-card">
+            <h3>Latency Breakdown</h3>
+            <div class="timing-bar-container">
+              <div class="timing-stat">
+                <span>Total Latency:</span>
+                <strong id="totalTimeMs">— ms</strong>
+              </div>
+              <div class="timing-detail">
+                <span>ML Inference: <b id="timeMlMs">—</b> ms</span>
+                <span>HMM & Transitions: <b id="timeHmmMs">—</b> ms</span>
+                <span>Viterbi: <b id="timeVitMs">—</b> ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decoded Arc Sequence Details -->
+          <details class="arc-sequence-details">
+            <summary>View Decoded Arc Sequence (<span id="arcSeqCount">0</span> arcs)</summary>
+            <div class="arc-sequence-box">
+              <code id="arcSequenceText">None</code>
+            </div>
+          </details>
+        </section>
+      </aside>
+
+      <!-- Right Area: Interactive Map -->
+      <section class="map-container">
+        <div id="map"></div>
+
+        <!-- Floating Map Legend & Layer Controls -->
+        <div class="map-overlay legend-card">
+          <h4>Map Elements</h4>
+          <div class="legend-item">
+            <span class="legend-marker gps-dot"></span>
+            <span>GPS Observations (Raw Track)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-line route-line"></span>
+            <span>Reconstructed Route (Directed Arcs)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon start-icon">S</span>
+            <span>Trip Start</span>
+            <span class="legend-icon end-icon">E</span>
+            <span>Trip End</span>
+          </div>
+          <div class="map-controls">
+            <button id="toggleGpsBtn" class="btn btn-xs active">Toggle GPS</button>
+            <button id="toggleRouteBtn" class="btn btn-xs active">Toggle Route</button>
+            <button id="fitBoundsBtn" class="btn btn-xs">Reset View</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

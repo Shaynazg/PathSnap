@@ -271,7 +271,8 @@ def build_road_network(trip):
         geometry = LineString([start, end])
 
         # Because coordinates are projected, length is in metres
-        length_m = float(geometry.length)
+        # Ensure positive length for routing and HMM transition validation
+        length_m = max(float(geometry.length), 1e-3)
 
         # Preserve original arc ID as the MultiDiGraph edge key
         road_graph.add_edge(
@@ -279,6 +280,8 @@ def build_road_network(trip):
             to_node,
             key=arc_id,
             arc_id=arc_id,
+            from_node_id=from_node,
+            to_node_id=to_node,
             length_m=length_m,
             geometry=geometry
         )
