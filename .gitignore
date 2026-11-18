@@ -1,0 +1,42 @@
+﻿# Dataset contents; keep the directory placeholders trackable
+/data/train/**
+!/data/train/.gitkeep
+/data/student_test/**
+!/data/student_test/.gitkeep
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Temporary files and logs
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.log
+
+# Environment secrets
+.env
+
+# Generated model artifacts
+*.joblib
+*.pkl
+*.h5
+
+# Local caches
+.cache/
+cache/
