@@ -1,0 +1,54 @@
+# Dataset contents; keep the directory placeholders trackable
+/data/train/**
+!/data/train/.gitkeep
+/data/student_test/**
+!/data/student_test/.gitkeep
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Temporary files and logs
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.log
+
+# Environment secrets
+.env
+
+# Generated model artifacts
+*.joblib
+*.pkl
+*.h5
+
+# Local caches
+.cache/
+cache/
+
+# Generated processed data (regenerate with: python -m src.features.build_training_table)
+# Large per-trip and combined files
+/data/processed/**/*_features.csv
+/data/processed/**/*_labeled.csv
+/data/processed/**/training_labels.csv
+/data/processed/*_candidates.csv
+# Obsolete outputs from the old alignment script
+/data/processed/**/*_route_order_details.csv
+# Small summaries and diagnostics (*_diagnostics.json, dataset_summary.csv,
+# *_label_quality.csv, route_candidate_overlap.csv, eda/) stay tracked
+# so the report numbers are verifiable.
