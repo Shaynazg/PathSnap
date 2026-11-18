@@ -1,12 +1,11 @@
+
 import networkx as nx
 import numpy as np
-import networkx as nx
 import geopandas as gpd
-
-
 
 from shapely.geometry import LineString
 from pyproj import Transformer
+
 
 def validate_trip(trip):
     """
@@ -58,7 +57,9 @@ def validate_trip(trip):
             errors.append("GPS timestamps are not in chronological order.")
 
         if (timestamp_diffs == 0).any():
-            warnings.append("Some GPS observations have duplicate timestamps.")
+            warnings.append(
+                "Some GPS observations have duplicate timestamps."
+            )
 
         if (timestamp_diffs > 1).any():
             warnings.append(
@@ -86,8 +87,9 @@ def validate_trip(trip):
 
     valid_node_ids = set(nodes["node_id"])
 
-    referenced_nodes = set(arcs["from_node_id"]) | set(
-        arcs["to_node_id"]
+    referenced_nodes = (
+        set(arcs["from_node_id"]) |
+        set(arcs["to_node_id"])
     )
 
     invalid_nodes = referenced_nodes - valid_node_ids
@@ -97,7 +99,7 @@ def validate_trip(trip):
             f"Arcs reference {len(invalid_nodes)} nonexistent nodes."
         )
 
-    # Detect parallel directed arcs.
+    # Detect parallel directed arcs
     parallel_mask = arcs.duplicated(
         subset=["from_node_id", "to_node_id"],
         keep=False
@@ -158,6 +160,7 @@ def print_validation_report(report):
     print("Arcs in parallel directed pairs:", report["num_parallel_arcs"])
 
     print("\nErrors:")
+
     if report["errors"]:
         for error in report["errors"]:
             print("  ERROR:", error)
@@ -165,13 +168,17 @@ def print_validation_report(report):
         print("  None")
 
     print("\nWarnings:")
+
     if report["warnings"]:
         for warning in report["warnings"]:
             print("  WARNING:", warning)
     else:
         print("  None")
 
-    print("\nOverall status:", "VALID" if report["valid"] else "INVALID")
+    print(
+        "\nOverall status:",
+        "VALID" if report["valid"] else "INVALID"
+    )
 
 
 def build_road_network(trip):
@@ -182,7 +189,7 @@ def build_road_network(trip):
     Returns
     -------
     road_graph : networkx.MultiDiGraph
-        Directed graph preserving original arc IDs.
+        Directed graph preserving original arc IDs and endpoints.
 
     road_gdf : geopandas.GeoDataFrame
         Projected road geometries with arc lengths in metres.
@@ -198,7 +205,9 @@ def build_road_network(trip):
     # 1. Determine a suitable projected CRS
     # --------------------------------------------------
 
-    # Use the geographic centre of the road network
+    if nodes.empty:
+        raise ValueError("Cannot build road network: nodes DataFrame is empty.")
+
     node_points = gpd.GeoSeries(
         gpd.points_from_xy(
             nodes["longitude"],
@@ -239,8 +248,8 @@ def build_road_network(trip):
 
     road_graph = nx.MultiDiGraph()
 
-    # Add nodes with their original coordinates
     for i, row in enumerate(nodes.itertuples(index=False)):
+
         node_id = int(row.node_id)
 
         road_graph.add_node(
@@ -267,14 +276,14 @@ def build_road_network(trip):
         start = node_coordinates[from_node]
         end = node_coordinates[to_node]
 
-        # Construct the straight-line geometry of the arc
+        # Construct the straight-line geometry
         geometry = LineString([start, end])
 
         # Because coordinates are projected, length is in metres
         # Ensure positive length for routing and HMM transition validation
         length_m = max(float(geometry.length), 1e-3)
 
-        # Preserve original arc ID as the MultiDiGraph edge key
+        # Preserve original arc ID and endpoint attributes
         road_graph.add_edge(
             from_node,
             to_node,
@@ -307,14 +316,13 @@ def build_road_network(trip):
     return road_graph, road_gdf, projected_crs
 
 
-
 def analyze_road_graph(road_graph):
     """
     Analyze basic connectivity and structural properties
     of the directed road graph.
     """
 
-    # Weak connectivity ignores edge direction.
+    # Weak connectivity ignores edge direction
     weak_components = list(
         nx.weakly_connected_components(road_graph)
     )
@@ -324,16 +332,17 @@ def analyze_road_graph(road_graph):
         if weak_components else 0
     )
 
-    # Identify isolated nodes and self-loop edges.
+    # Identify isolated nodes and self-loop edges
     isolated_nodes = list(nx.isolates(road_graph))
 
     self_loop_count = nx.number_of_selfloops(road_graph)
 
-    # Identify zero-length edges.
+    # Identify zero-length edges
     zero_length_edges = [
         (u, v, key)
         for u, v, key, data in road_graph.edges(
-            keys=True, data=True
+            keys=True,
+            data=True
         )
         if data["length_m"] == 0
     ]
@@ -368,11 +377,17 @@ def check_route_continuity(trip):
     discontinuities = []
 
     for i in range(len(route_arc_ids) - 1):
+
         current_arc_id = int(route_arc_ids[i])
         next_arc_id = int(route_arc_ids[i + 1])
 
-        current_to = int(arcs.loc[current_arc_id, "to_node_id"])
-        next_from = int(arcs.loc[next_arc_id, "from_node_id"])
+        current_to = int(
+            arcs.loc[current_arc_id, "to_node_id"]
+        )
+
+        next_from = int(
+            arcs.loc[next_arc_id, "from_node_id"]
+        )
 
         if current_to != next_from:
             discontinuities.append({
@@ -419,6 +434,7 @@ def shortest_directed_arc_path(road_graph, source_node, target_node):
             weight="length_m",
             method="dijkstra"
         )
+
     except nx.NetworkXNoPath:
         return {
             "reachable": False,
@@ -434,7 +450,7 @@ def shortest_directed_arc_path(road_graph, source_node, target_node):
 
         parallel_edges = road_graph.get_edge_data(u, v)
 
-        # Select the shortest parallel directed edge.
+        # Select the shortest parallel directed edge
         selected_key, selected_data = min(
             parallel_edges.items(),
             key=lambda item: item[1]["length_m"]

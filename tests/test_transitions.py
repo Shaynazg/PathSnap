@@ -1,3 +1,4 @@
+
 """Synthetic tests for directed transition distances and scores."""
 
 from __future__ import annotations
@@ -153,7 +154,7 @@ def test_directly_connected_arcs_distance_and_score() -> None:
     )
 
     score = result["trip"][1][(10, 20)]
-    assert score.network_distance_m == 80.0  # 60 m remaining + 20 m current.
+    assert score.network_distance_m == 80.0
     assert score.log_score == -8.0
 
 
@@ -313,7 +314,6 @@ def test_missing_candidate_observation_is_explicit_and_not_bridged() -> None:
 
 def test_haversine_distance_and_elapsed_speed_penalty() -> None:
     graph = _graph([(1, "a", "b", 2_000.0)])
-    # About 111.2 m east-west at the equator; route distance is 120 m.
     result = _score(
         graph,
         [("trip", 0, _time(), 0.0, 0.0), ("trip", 1, _time(10), 0.001, 0.0)],
@@ -370,11 +370,23 @@ def test_invalid_projected_offsets_are_rejected(offset: float) -> None:
     "attributes",
     [
         {"arc_id": 1, "from_node_id": "a", "to_node_id": "b"},
-        {"arc_id": 1, "from_node_id": "a", "to_node_id": "b", "length_m": math.inf},
-        {"arc_id": 1, "from_node_id": "a", "to_node_id": "b", "length_m": 0.0},
+        {
+            "arc_id": 1,
+            "from_node_id": "a",
+            "to_node_id": "b",
+            "length_m": math.inf,
+        },
+        {
+            "arc_id": 1,
+            "from_node_id": "a",
+            "to_node_id": "b",
+            "length_m": -1.0,
+        },
     ],
 )
-def test_invalid_road_arc_attributes_are_rejected(attributes: dict[str, Any]) -> None:
+def test_invalid_road_arc_attributes_are_rejected(
+    attributes: dict[str, Any],
+) -> None:
     graph = FakeMultiDiGraph()
     graph.add_edge("a", "b", key="not-arc-id", **attributes)
     empty_candidates, empty_observations = _frames([], [])
@@ -388,6 +400,32 @@ def test_invalid_road_arc_attributes_are_rejected(attributes: dict[str, Any]) ->
             max_speed_mps=1.0,
             speed_scale_mps=1.0,
         )
+
+
+def test_zero_length_road_arc_is_accepted() -> None:
+    graph = _graph(
+        [
+            (1, "a", "b", 0.0),
+            (2, "b", "c", 10.0),
+        ]
+    )
+
+    result = _score(
+        graph,
+        [
+            ("trip", 0, _time(), 0.0, 0.0),
+            ("trip", 1, _time(5), 0.0, 0.0),
+        ],
+        [
+            ("trip", 0, 1, 0.0),
+            ("trip", 1, 2, 5.0),
+        ],
+    )
+
+    score = result["trip"][1][(1, 2)]
+
+    assert score.network_distance_m == 5.0
+    assert math.isfinite(score.log_score)
 
 
 def test_duplicate_arc_ids_and_invalid_graph_type_are_rejected() -> None:
@@ -539,8 +577,6 @@ def test_networkx_multidigraph_parallel_edges_use_minimum_and_keep_arc_ids() -> 
         [("trip", 0, 10, 90.0), ("trip", 1, 20, 5.0), ("trip", 1, 21, 6.0)],
     )
 
-    # Arc IDs are edge attributes, not MultiDiGraph keys. The middle route
-    # takes the 2 m parallel edge, not the 9 m edge.
     assert result["trip"][1][(10, 20)].network_distance_m == 21.0
     assert result["trip"][1][(10, 21)].network_distance_m == 22.0
     assert set(result["trip"][1]) == {(10, 20), (10, 21)}
@@ -563,7 +599,6 @@ def test_networkx_multidigraph_directed_multihop_shortest_path() -> None:
         [("trip", 0, 1, 20.0), ("trip", 1, 6, 5.0)],
     )
 
-    # 10 m remaining + (8 + 7) m shortest middle route + 5 m on current arc.
     assert result["trip"][1][(1, 6)].network_distance_m == 30.0
 
 
@@ -706,4 +741,3 @@ def test_invalid_candidate_arc_ids_are_rejected(arc_id: object) -> None:
             max_speed_mps=1.0,
             speed_scale_mps=1.0,
         )
-
