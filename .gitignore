@@ -43,3 +43,6 @@ ENV/
 # Local caches
 .cache/
 cache/
+
+/data/processed/train_candidates.csv
+/data/processed/student_test_candidates.csv

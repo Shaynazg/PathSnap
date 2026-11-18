@@ -1,0 +1,46 @@
+{
+    "trip_id": "00000092",
+    "split": "train",
+    "projected_crs": "EPSG:32630",
+    "total_observations": 7892,
+    "observations_with_candidates": 7892,
+    "observations_without_candidates": 0,
+    "total_candidate_rows": 51033,
+    "average_candidates_per_observation": 6.4664216928535225,
+    "road_graph_nodes": 26468,
+    "road_graph_edges": 53348,
+    "candidate_generation": {
+        "trip_id": "00000092",
+        "total_observations": 7892,
+        "observations_with_candidates": 7892,
+        "observations_without_candidates": 0,
+        "total_candidates": 51033,
+        "average_candidates_per_observation": 6.4664216928535225,
+        "radius_m": 50,
+        "max_candidates": 8,
+        "missing_observation_indices": []
+    },
+    "feature_columns": [
+        "trip_id",
+        "obs_idx",
+        "timestamp",
+        "longitude",
+        "latitude",
+        "candidate_arc_id",
+        "distance_m",
+        "projected_offset_m",
+        "arc_length_m",
+        "remaining_distance_m",
+        "offset_ratio",
+        "is_zero_length_arc",
+        "time_delta_s",
+        "gps_displacement_m",
+        "gps_speed_mps",
+        "gps_heading_deg",
+        "candidate_heading_deg",
+        "heading_difference_deg"
+    ],
+    "validation_warnings": [
+        "8 arcs belong to parallel directed node pairs. Preserve them using MultiDiGraph."
+    ]
+}

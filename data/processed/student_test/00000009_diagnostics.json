@@ -1,0 +1,47 @@
+{
+    "trip_id": "00000009",
+    "split": "student_test",
+    "projected_crs": "EPSG:32633",
+    "total_observations": 1049,
+    "observations_with_candidates": 1049,
+    "observations_without_candidates": 0,
+    "total_candidate_rows": 7929,
+    "average_candidates_per_observation": 7.558627264061011,
+    "road_graph_nodes": 6745,
+    "road_graph_edges": 13106,
+    "candidate_generation": {
+        "trip_id": "00000009",
+        "total_observations": 1049,
+        "observations_with_candidates": 1049,
+        "observations_without_candidates": 0,
+        "total_candidates": 7929,
+        "average_candidates_per_observation": 7.558627264061011,
+        "radius_m": 50,
+        "max_candidates": 8,
+        "missing_observation_indices": []
+    },
+    "feature_columns": [
+        "trip_id",
+        "obs_idx",
+        "timestamp",
+        "longitude",
+        "latitude",
+        "candidate_arc_id",
+        "distance_m",
+        "projected_offset_m",
+        "arc_length_m",
+        "remaining_distance_m",
+        "offset_ratio",
+        "is_zero_length_arc",
+        "time_delta_s",
+        "gps_displacement_m",
+        "gps_speed_mps",
+        "gps_heading_deg",
+        "candidate_heading_deg",
+        "heading_difference_deg"
+    ],
+    "validation_warnings": [
+        "GPS observations contain gaps greater than one second.",
+        "124 arcs belong to parallel directed node pairs. Preserve them using MultiDiGraph."
+    ]
+}
