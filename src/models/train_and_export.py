@@ -11,7 +11,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.pipeline import Pipeline
@@ -51,7 +51,7 @@ def ranking_metrics(frame: pd.DataFrame) -> dict[str, float]:
 
 def main():
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    model_path = ARTIFACT_DIR / "pathsnap_best_model.joblib"
+    model_path = ARTIFACT_DIR / "pathsnap_gradient_boosting.joblib"
     metadata_path = ARTIFACT_DIR / "pathsnap_model_metadata.json"
     predictions_path = ARTIFACT_DIR / "student_test_candidate_predictions.csv"
     comparison_path = ARTIFACT_DIR / "pathsnap_tuned_model_comparison.csv"
@@ -72,19 +72,10 @@ def main():
     X_test = test_aligned[FEATURE_COLUMNS]
     y_test = test_aligned[TARGET]
 
-    print("Building production RandomForest pipeline...")
-    # Best-performing architecture: Balanced Random Forest
+    print("Building Gradient Boosting baseline pipeline...")
     pipeline = Pipeline([
         ("preprocess", SimpleImputer(strategy="median", keep_empty_features=True)),
-        ("model", RandomForestClassifier(
-            n_estimators=50,
-            max_depth=16,
-            min_samples_split=10,
-            min_samples_leaf=4,
-            random_state=42,
-            class_weight="balanced_subsample",
-            n_jobs=-1,
-        )),
+        ("model", GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)),
     ])
 
     print("Fitting model...")
@@ -123,8 +114,10 @@ def main():
 
     # Export metadata
     metadata = {
-        "model_name": "Random Forest (Balanced, Tuned)",
-        "selected_model": "Random Forest",
+        "model_name": "Gradient Boosting (Baseline)",
+        "selected_model": "Gradient Boosting",
+        "configuration": {"n_estimators": 100, "learning_rate": 0.1, "max_depth": 3, "random_state": 42},
+        "hyperparameter_optimization": False,
         "feature_columns": FEATURE_COLUMNS,
         "target": TARGET,
         "identifier_columns": IDENTIFIERS,

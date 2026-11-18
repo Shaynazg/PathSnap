@@ -112,11 +112,13 @@ class CandidateClassifier:
         else:
             # Check default path or env var
             env_path = os.environ.get("PATHSNAP_MODEL_PATH")
-            default_path = Path("artifacts") / "pathsnap_best_model.joblib"
+            default_path = Path(os.environ.get("PATHSNAP_MODEL_PATH", "artifacts/pathsnap_gradient_boosting.joblib"))
             if env_path and Path(env_path).exists():
                 self.load(env_path)
             elif default_path.exists():
                 self.load(default_path)
+            elif Path("artifacts/pathsnap_best_model.joblib").exists():
+                self.load(Path("artifacts/pathsnap_best_model.joblib"))
 
     @property
     def is_loaded(self) -> bool:
